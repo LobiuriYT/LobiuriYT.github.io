@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Registros</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .contenedor {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00b4d8;
+        }
+
+        .formulario {
+            margin-bottom: 30px;
+        }
+
+        .campo {
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #404040;
+            background: #1f1f1f;
+            color: #fff;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #00b4d8;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0096b4;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #404040;
+            position: relative;
+        }
+
+        th {
+            background: #1f1f1f;
+            color: #00b4d8;
+        }
+
+        .btn-eliminar {
+            background: #dc3545;
+        }
+
+        .btn-eliminar:hover {
+            background: #bb2d3b;
+        }
+
+        .toggle-visibility {
+            position: absolute;
+            right: 10px;
+            top: 32px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="contenedor">
+        <h1>Sistema de Registros</h1>
+
+        <div class="formulario">
+            <h2>Nuevo Registro</h2>
+            <form id="formRegistro" onsubmit="registrarPersona(event)">
+                <div class="campo">
+                    <label for="nombre">Nombre Completo:</label>
+                    <input type="password" id="nombre" required>
+                    <span class="toggle-visibility" onclick="toggleVisibility('nombre')">👁️</span>
+                </div>
+                <div class="campo">
+                    <label for="clave">Clave de Acceso:</label>
+                    <input type="password" id="clave" required>
+                    <span class="toggle-visibility" onclick="toggleVisibility('clave')">👁️</span>
+                </div>
+                <button type="submit">Registrar</button>
+            </form>
+        </div>
+
+        <div class="lista-registros">
+            <h2>Registros Actuales</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Clave</th>
+                        <th>Fecha</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaRegistros"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Inicializar array de registros desde localStorage
+        let registros = JSON.parse(localStorage.getItem('registros')) || [];
+
+        function toggleVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        // Cargar datos al iniciar
+        function iniciarSistema() {
+            actualizarTabla();
+        }
+
+        // Registrar nueva persona
+        function registrarPersona(e) {
+            e.preventDefault();
+
+            const nombre = document.getElementById('nombre').value.trim();
+            const clave = document.getElementById('clave').value.trim();
+
+            // Validar duplicados
+            if (registros.some(r => r.nombreCompleto === nombre || r.claveAcceso === clave)) {
+                alert('Este nombre o clave ya existe');
+                return;
+            }
+
+            // Crear nuevo registro
+            const registro = {
+                nombreCompleto: nombre,
+                claveAcceso: clave,
+                fecha: new Date().toLocaleDateString()
+            };
+
+            // Agregar al array y guardar en localStorage
+            registros.push(registro);
+            localStorage.setItem('registros', JSON.stringify(registros));
+            
+            // Actualizar tabla y limpiar formulario
+            actualizarTabla();
+            document.getElementById('formRegistro').reset();
+            
+            alert('Registro guardado exitosamente');
+        }
+
+        // Actualizar tabla de registros
+        function actualizarTabla() {
+            const tabla = document.getElementById('tablaRegistros');
+            tabla.innerHTML = '';
+
+            registros.forEach((registro, index) => {
+                const fila = tabla.insertRow();
+                
+                // Celda nombre
+                const celdaNombre = fila.insertCell();
+                celdaNombre.textContent = registro.nombreCompleto;
+
+                // Celda clave
+                const celdaClave = fila.insertCell();
+                celdaClave.textContent = registro.claveAcceso;
+
+                fila.insertCell().textContent = registro.fecha;
+
+                const celdaAcciones = fila.insertCell();
+                const btnEliminar = document.createElement('button');
+                btnEliminar.textContent = 'Eliminar';
+                btnEliminar.className = 'btn-eliminar';
+                btnEliminar.onclick = () => eliminarRegistro(index);
+                celdaAcciones.appendChild(btnEliminar);
+            });
+        }
+
+        // Eliminar registro
+        function eliminarRegistro(index) {
+            if (confirm('¿Seguro que desea eliminar este registro?')) {
+                registros.splice(index, 1);
+                localStorage.setItem('registros', JSON.stringify(registros));
+                actualizarTabla();
+            }
+        }
+
+        // Verificar acceso (para inicio.html)
+        function verificarAcceso(nombreIngresado, claveIngresada) {
+            return registros.some(registro => 
+                registro.nombreCompleto === nombreIngresado && 
+                registro.claveAcceso === claveIngresada
+            );
+        }
+
+        // Iniciar sistema al cargar página
+        window.onload = iniciarSistema;
+
+        // Exponer función de verificación globalmente
+        window.verificarAcceso = verificarAcceso;
+    </script>
+</body>
+</html>

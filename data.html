@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Cloud HC - Gestión de Personal</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+
+        .header {
+            background-color: #2d2d2d;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .dashboard-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+        }
+
+        .info-card {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            width: 200px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-card h3 {
+            margin: 0;
+            color: #ffffff;
+        }
+
+        .info-card p {
+            font-size: 24px;
+            margin: 10px 0 0;
+            font-weight: bold;
+        }
+
+        .btn-agregar, .btn-ver, .btn-eliminar {
+            background-color: #404040;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-ver {
+            padding: 5px 10px;
+            font-size: 0.9em;
+        }
+
+        .btn-eliminar {
+            background-color: #a95959;
+            padding: 5px 10px;
+            font-size: 0.9em;
+        }
+
+        .btn-agregar:hover, .btn-ver:hover {
+            background-color: #505050;
+            transform: scale(1.05);
+        }
+
+        .btn-eliminar:hover {
+            background-color: #c46767;
+            transform: scale(1.05);
+        }
+
+        .miembros-tabla {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: rgba(45, 45, 45, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .miembros-tabla th, 
+        .miembros-tabla td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #404040;
+        }
+
+        .miembros-tabla th {
+            background-color: #2d2d2d;
+            color: white;
+            font-weight: bold;
+        }
+
+        .miembros-tabla tr:hover {
+            background-color: rgba(45, 45, 45, 0.2);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+        }
+
+        .modal-contenido {
+            background-color: #1a1a1a;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            margin: 50px auto;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-grupo {
+            margin-bottom: 20px;
+        }
+
+        .form-grupo label {
+            display: block;
+            margin-bottom: 8px;
+            color: #b0b0b0;
+            font-weight: bold;
+        }
+
+        .form-grupo input,
+        .form-grupo select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #404040;
+            border-radius: 5px;
+            background-color: #2d2d2d;
+            color: white;
+        }
+
+        .form-grupo input:focus,
+        .form-grupo select:focus {
+            outline: none;
+            border-color: #505050;
+            box-shadow: 0 0 5px rgba(80, 80, 80, 0.5);
+        }
+
+        .dato-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .estado-dentro { color: #90a959; font-weight: 600; }
+        .estado-temporal { color: #d3a04c; font-weight: 600; }
+        .estado-blacklist { color: #a95959; font-weight: 600; }
+        .estado-fuera { color: #8c8c8c; font-weight: 600; }
+
+        .acciones-container {
+            display: flex;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Sistema Cloud HC</h1>
+        <p>Panel de Gestión de Personal</p>
+    </div>
+
+    <div class="container">
+        <div class="dashboard-info">
+            <div class="info-card">
+                <h3>Total Miembros</h3>
+                <p id="total-miembros">0</p>
+            </div>
+            <div class="info-card">
+                <h3>Última Actualización</h3>
+                <p id="ultima-actualizacion">-</p>
+            </div>
+        </div>
+
+        <button class="btn-agregar" id="btn-nuevo">+ Registrar Nuevo Miembro</button>
+        
+        <table class="miembros-tabla">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Apodo</th>
+                    <th>Edad</th>
+                    <th>Clave Única</th>
+                    <th>Rango</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-cuerpo">
+            </tbody>
+        </table>
+    </div>
+
+    <div id="modal-agregar" class="modal">
+        <div class="modal-contenido">
+            <h2>Registro de Nuevo Miembro</h2>
+            <form id="form-miembro">
+                <div class="form-grupo">
+                    <label>Nombre:</label>
+                    <input type="text" id="nombre" required>
+                </div>
+                <div class="form-grupo">
+                    <label>Apodo:</label>
+                    <input type="text" id="apodo" required>
+                </div>
+                <div class="form-grupo">
+                    <label>Edad:</label>
+                    <input type="number" id="edad" required min="13" max="99">
+                </div>
+                <div class="form-grupo">
+                    <label>Clave Única:</label>
+                    <input type="text" id="clave" required pattern="HC-\d{3}" placeholder="HC-XXX">
+                </div>
+                <div class="form-grupo">
+                    <label>Rango:</label>
+                    <select id="rango" required>
+                        <option value="">Seleccionar rango</option>
+                        <option value="Miembro">Miembro</option>
+                        <option value="Moderador">Moderador</option>
+                        <option value="Líder">Líder</option>
+                    </select>
+                </div>
+                <div class="form-grupo">
+                    <label>Estado:</label>
+                    <select id="estado" required>
+                        <option value="Dentro del clan">Dentro del clan</option>
+                        <option value="Fuera del clan">Fuera del clan</option>
+                        <option value="Fuera del clan temporalmente">Fuera del clan temporalmente</option>
+                        <option value="BLACK LIST">BLACK LIST</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-agregar">Confirmar Registro</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const modal = document.getElementById("modal-agregar");
+        const btnAgregar = document.getElementById("btn-nuevo");
+        const form = document.getElementById("form-miembro");
+        const tablaCuerpo = document.getElementById("tabla-cuerpo");
+        let totalMiembros = 0;
+
+        btnAgregar.onclick = () => modal.style.display = "block";
+
+        window.onclick = (event) => {
+            if (event.target == modal) modal.style.display = "none";
+        }
+
+        function toggleDato(elementId) {
+            const elemento = document.getElementById(elementId);
+            const datoReal = elemento.getAttribute('data-valor');
+            const datoOculto = '*'.repeat(datoReal.length);
+            
+            if (elemento.textContent === datoOculto) {
+                elemento.textContent = datoReal;
+            } else {
+                elemento.textContent = datoOculto;
+            }
+        }
+
+        function eliminarMiembro(fila) {
+            if (confirm("¿Está seguro que desea eliminar este miembro?")) {
+                fila.remove();
+                totalMiembros--;
+                document.getElementById("total-miembros").textContent = totalMiembros;
+                document.getElementById("ultima-actualizacion").textContent = new Date().toLocaleDateString();
+                guardarDatos();
+            }
+        }
+
+        form.onsubmit = (e) => {
+            e.preventDefault();
+            
+            const nuevoMiembro = {
+                nombre: document.getElementById("nombre").value,
+                apodo: document.getElementById("apodo").value,
+                edad: document.getElementById("edad").value,
+                clave: document.getElementById("clave").value,
+                rango: document.getElementById("rango").value,
+                estado: document.getElementById("estado").value
+            };
+
+            let estadoClase = "dentro";
+            if (nuevoMiembro.estado === "Fuera del clan temporalmente") {
+                estadoClase = "temporal";
+            } else if (nuevoMiembro.estado === "BLACK LIST") {
+                estadoClase = "blacklist";
+            } else if (nuevoMiembro.estado === "Fuera del clan") {
+                estadoClase = "fuera";
+            }
+
+            const timestamp = Date.now();
+            const nombreId = `nombre-${timestamp}`;
+            const claveId = `clave-${timestamp}`;
+            const nuevaFila = document.createElement("tr");
+            nuevaFila.innerHTML = `
+                <td>
+                    <div class="dato-container">
+                        <span id="${nombreId}" data-valor="${nuevoMiembro.nombre}">${'*'.repeat(nuevoMiembro.nombre.length)}</span>
+                        <button class="btn-ver" onclick="toggleDato('${nombreId}')">Ver nombre</button>
+                    </div>
+                </td>
+                <td>${nuevoMiembro.apodo}</td>
+                <td>${nuevoMiembro.edad}</td>
+                <td>
+                    <div class="dato-container">
+                        <span id="${claveId}" data-valor="${nuevoMiembro.clave}">${'*'.repeat(nuevoMiembro.clave.length)}</span>
+                        <button class="btn-ver" onclick="toggleDato('${claveId}')">Ver clave</button>
+                    </div>
+                </td>
+                <td>${nuevoMiembro.rango}</td>
+                <td><span class="estado-${estadoClase}">${nuevoMiembro.estado}</span></td>
+                <td>
+                    <div class="acciones-container">
+                        <button class="btn-eliminar" onclick="eliminarMiembro(this.closest('tr'))">Eliminar</button>
+                    </div>
+                </td>
+            `;
+
+            tablaCuerpo.appendChild(nuevaFila);
+            totalMiembros++;
+            document.getElementById("total-miembros").textContent = totalMiembros;
+            document.getElementById("ultima-actualizacion").textContent = new Date().toLocaleDateString();
+            
+            modal.style.display = "none";
+            form.reset();
+        }
+    </script>
+</body>
+</html>
+
+<script>
+    // Función para guardar los datos en localStorage
+    function guardarDatos() {
+        const filas = document.getElementById("tabla-cuerpo").getElementsByTagName("tr");
+        const datos = [];
+        
+        for (let fila of filas) {
+            const celdas = fila.getElementsByTagName("td");
+            const miembro = {
+                nombre: celdas[0].querySelector("span").dataset.valor,
+                apodo: celdas[1].textContent,
+                edad: celdas[2].textContent,
+                clave: celdas[3].querySelector("span").dataset.valor,
+                rango: celdas[4].textContent,
+                estado: celdas[5].querySelector("span").textContent
+            };
+            datos.push(miembro);
+        }
+
+        localStorage.setItem("miembrosData", JSON.stringify(datos));
+        localStorage.setItem("totalMiembros", totalMiembros);
+        localStorage.setItem("ultimaActualizacion", document.getElementById("ultima-actualizacion").textContent);
+    }
+
+    // Función para cargar los datos desde localStorage
+    function cargarDatos() {
+        const datosGuardados = localStorage.getItem("miembrosData");
+        if (datosGuardados) {
+            const datos = JSON.parse(datosGuardados);
+            const tablaCuerpo = document.getElementById("tabla-cuerpo");
+            
+            datos.forEach(miembro => {
+                let estadoClase = "dentro";
+                if (miembro.estado === "Fuera del clan temporalmente") {
+                    estadoClase = "temporal";
+                } else if (miembro.estado === "BLACK LIST") {
+                    estadoClase = "blacklist";
+                } else if (miembro.estado === "Fuera del clan") {
+                    estadoClase = "fuera";
+                }
+
+                const timestamp = Date.now();
+                const nombreId = `nombre-${timestamp}`;
+                const claveId = `clave-${timestamp}`;
+                const nuevaFila = document.createElement("tr");
+                nuevaFila.innerHTML = `
+                    <td>
+                        <div class="dato-container">
+                            <span id="${nombreId}" data-valor="${miembro.nombre}">${'*'.repeat(miembro.nombre.length)}</span>
+                            <button class="btn-ver" onclick="toggleDato('${nombreId}')">Ver nombre</button>
+                        </div>
+                    </td>
+                    <td>${miembro.apodo}</td>
+                    <td>${miembro.edad}</td>
+                    <td>
+                        <div class="dato-container">
+                            <span id="${claveId}" data-valor="${miembro.clave}">${'*'.repeat(miembro.clave.length)}</span>
+                            <button class="btn-ver" onclick="toggleDato('${claveId}')">Ver clave</button>
+                        </div>
+                    </td>
+                    <td>${miembro.rango}</td>
+                    <td><span class="estado-${estadoClase}">${miembro.estado}</span></td>
+                    <td>
+                        <div class="acciones-container">
+                            <button class="btn-eliminar" onclick="eliminarMiembro(this.closest('tr'))">Eliminar</button>
+                        </div>
+                    </td>
+                `;
+                tablaCuerpo.appendChild(nuevaFila);
+            });
+
+            totalMiembros = parseInt(localStorage.getItem("totalMiembros") || "0");
+            document.getElementById("total-miembros").textContent = totalMiembros;
+            document.getElementById("ultima-actualizacion").textContent = localStorage.getItem("ultimaActualizacion") || "-";
+        }
+    }
+
+    // Llamar a guardarDatos cada vez que se agregue un nuevo miembro
+    form.addEventListener("submit", function() {
+        setTimeout(guardarDatos, 100); // Pequeño retraso para asegurar que los datos se hayan actualizado
+    });
+
+    // Cargar datos al iniciar la página
+    window.addEventListener("load", cargarDatos);
+</script>
